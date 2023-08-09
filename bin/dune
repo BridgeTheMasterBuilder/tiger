@@ -1,0 +1,5 @@
+(executable
+ (public_name tigerc)
+ (name main)
+ (modules main)
+ (libraries tigerc_lib cmdliner))

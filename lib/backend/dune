@@ -1,0 +1,11 @@
+(library
+ (name backend)
+ (modules
+  frame
+  codegen
+  fGraph
+  liveness
+  regAlloc
+  color
+  prgraph)
+ (libraries containers containers-data ocamlgraph iter util agnostic x86))

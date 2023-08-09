@@ -1,0 +1,18 @@
+(ocamllex lexer)
+
+(menhir
+ (modules parser))
+
+(library
+ (name frontend)
+ (modules
+  lexer
+  parser
+  absyn
+  prabsyn
+  types
+  env
+  translate
+  semant
+  findEscape)
+ (libraries containers backend))

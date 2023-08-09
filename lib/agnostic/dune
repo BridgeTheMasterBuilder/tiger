@@ -1,0 +1,13 @@
+(library
+ (name agnostic)
+ (modules
+  canon
+  errorMsg
+  symbol
+  temp
+  tree
+  prtree
+  assem
+  abstractFrame
+  abstractCodegen)
+ (libraries containers util))

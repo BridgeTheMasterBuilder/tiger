@@ -1,0 +1,4 @@
+(library
+ (name tigerc_lib)
+(modules driver)
+(libraries containers agnostic frontend backend str))
