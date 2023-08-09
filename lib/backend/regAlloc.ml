@@ -97,14 +97,6 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
 
 let rewrite_program available_regs frame (body : Frame.body) spilled_nodes
     coalesced_moves =
-  print_endline "can delete the following moves:";
-  MoveSet.iter
-    (fun m ->
-      print_endline
-        (Assem.format
-           (Frame.map_temp Frame.temp_map)
-           (FGraph.Flowgraph.V.label m)))
-    coalesced_moves;
   TemporarySet.fold
     (fun t (body, available_regs) ->
       spill_temporary t frame body available_regs)
