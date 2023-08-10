@@ -95,8 +95,7 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
       in
       aux 0 local body prologue [] epilogue sink None
 
-let rewrite_program available_regs frame (body : Frame.body) spilled_nodes
-    coalesced_moves =
+let rewrite_program available_regs frame (body : Frame.body) spilled_nodes =
   TemporarySet.fold
     (fun t (body, available_regs) ->
       spill_temporary t frame body available_regs)
@@ -134,7 +133,23 @@ let rec alloc frame procedure_body available_regs =
   in
   if not (TemporarySet.is_empty spills) then
     let body, available_regs =
-      rewrite_program available_regs frame procedure_body spills coalesced_moves
+      rewrite_program available_regs frame procedure_body spills
     in
     alloc frame body available_regs
-  else (insns, allocation)
+  else
+    let nodes =
+      MoveSet.fold
+        (fun m nodes ->
+          List.remove
+            ~eq:(fun insn1 insn2 ->
+              match
+                (FGraph.Flowgraph.V.label insn1, FGraph.Flowgraph.V.label insn2)
+              with
+              | ( Assem.Move { src = [ src1 ]; dst = [ dst1 ]; _ },
+                  Assem.Move { src = [ src2 ]; dst = [ dst2 ]; _ } ) ->
+                  Temp.equal src1 src2 && Temp.equal dst1 dst2
+              | _ -> false)
+            ~key:m nodes)
+        coalesced_moves nodes
+    in
+    (List.map FGraph.Flowgraph.V.label nodes, allocation)

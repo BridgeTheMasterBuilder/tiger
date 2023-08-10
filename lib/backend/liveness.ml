@@ -6,7 +6,7 @@ module F = Flowgraph
 open Graph
 open Frame
 
-module IGraph = Imperative.Digraph.Concrete (struct
+module IGraph = Imperative.Graph.Concrete (struct
   type t = Temp.t
 
   let hash = Temp.to_int
@@ -45,11 +45,7 @@ let compute_liveness flowgraph nodes =
               (* We only consider move instructions of the form t_i <- t_j,
                  not those with memory operands and arbitrary addressing modes *)
               (* TODO *)
-              if
-                (not (String.contains assem '['))
-                && (not (Temp.equal src Frame.fp))
-                && not (Temp.equal dst Frame.fp)
-              then (
+              if not (String.contains assem '[') then (
                 ListRef.push insn moves;
                 let dst_node = IGraph.V.create dst in
                 Hashtbl.add move_list dst_node insn;
@@ -121,4 +117,5 @@ let interference_graph (({ control = flowgraph; _ } : FGraph.t), nodes) =
                    ts)
                def))
     nodes;
+
   { graph; moves; move_list }
