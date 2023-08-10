@@ -1,20 +1,12 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
-
-struct _IO_FILE;
-
-typedef struct _IO_FILE FILE;
-
-extern FILE *stdin;
-extern FILE *stdout;
-
-int fgetc(FILE *stream);
-int fputs(const char *restrict s, FILE *restrict stream);
-int fflush(FILE *stream);
-void *malloc(size_t size);
-
-#define EOF (-1)
+#define exit exit_unused
+#include <stdlib.h>
+#undef exit
+#define getchar getchar_unused
+#include <stdio.h>
+#undef getchar
 
 extern int tigermain(void);
 
