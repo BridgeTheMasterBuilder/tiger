@@ -43,15 +43,24 @@ let run filename output_assembly =
             let print_insns insns allocation =
               List.iter
                 (fun insn ->
-                  let s = Assem.format (Frame.map_temp allocation) insn in
-                  if not (String.equal s "") then
-                    Printf.fprintf output_channel "%s\n" s)
+                  match insn with
+                  | Assem.Move { assem; dst = [ dst ]; src = [ src ]; _ }
+                    when (not (String.contains assem '['))
+                         (* TODO *)
+                         && String.equal
+                              (Hashtbl.find allocation dst)
+                              (Hashtbl.find allocation src) ->
+                      (* Ignore self-moves *)
+                      ()
+                  | _ ->
+                      let s = Assem.format (Frame.map_temp allocation) insn in
+                      if not (String.equal s "") then
+                        Printf.fprintf output_channel "%s\n" s)
                 insns
             in
             let body = Frame.proc_entry_exit frame insns in
             let insns, allocation =
               RegAlloc.alloc frame body Frame.calleesaves
-              (* RegAlloc.alloc frame body [] *)
             in
             print_insns insns allocation
         | Frame.String (lab, s) ->

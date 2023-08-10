@@ -96,15 +96,7 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
       aux 0 local body prologue [] epilogue sink None
 
 let rewrite_program available_regs frame (body : Frame.body) spilled_nodes
-    coalesced_moves =
-  (* print_endline "can delete the following moves:"; *)
-  (* MoveSet.iter *)
-  (*   (fun m -> *)
-  (*     print_endline *)
-  (*       (Assem.format *)
-  (*          (Frame.map_temp Frame.temp_map) *)
-  (*          (FGraph.Flowgraph.V.label m))) *)
-  (*   coalesced_moves; *)
+    =
   TemporarySet.fold
     (fun t (body, available_regs) ->
       spill_temporary t frame body available_regs)
@@ -119,10 +111,6 @@ let rec alloc frame procedure_body available_regs =
   let flowgraph, nodes = FGraph.make insns in
   let interference = Liveness.interference_graph (flowgraph, nodes) in
   let igraph = interference.graph in
-  (* Printf.printf "Cardinality: %d Number of edges: %d\n" *)
-  (*   (IGraph.nb_vertex igraph) (IGraph.nb_edges igraph); *)
-  (* let file = open_out (Symbol.name (Frame.name frame) ^ "_igraph.dot") in *)
-  (* Prgraph.IGraphPrinter.print igraph file; *)
   let allocation, spills, coalesced_moves =
     let precolored = Frame.temp_map in
     let degree = Hashtbl.create (List.length nodes) in
@@ -146,7 +134,23 @@ let rec alloc frame procedure_body available_regs =
   in
   if not (TemporarySet.is_empty spills) then
     let body, available_regs =
-      rewrite_program available_regs frame procedure_body spills coalesced_moves
+      rewrite_program available_regs frame procedure_body spills
     in
     alloc frame body available_regs
-  else (insns, allocation)
+  else
+    let nodes =
+      MoveSet.fold
+        (fun m nodes ->
+          List.remove
+            ~eq:(fun insn1 insn2 ->
+              match
+                (FGraph.Flowgraph.V.label insn1, FGraph.Flowgraph.V.label insn2)
+              with
+              | ( Assem.Move { src = [ src1 ]; dst = [ dst1 ]; _ },
+                  Assem.Move { src = [ src2 ]; dst = [ dst2 ]; _ } ) ->
+                  Temp.equal src1 src2 && Temp.equal dst1 dst2
+              | _ -> false)
+            ~key:m nodes)
+        coalesced_moves nodes
+    in
+    (List.map FGraph.Flowgraph.V.label nodes, allocation)

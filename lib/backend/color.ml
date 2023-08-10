@@ -95,15 +95,6 @@ let color_graph
   let constrained_moves = ref MoveSet.empty in
   let frozen_moves = ref MoveSet.empty in
   let coalesceable_moves = ref (MoveSet.of_list interference.moves) in
-  (* print_endline "Coalesceable moves:"; *)
-  (* MoveSet.iter *)
-  (*   (fun m -> *)
-  (*     print_endline *)
-  (*       (Assem.format *)
-  (*          (Frame.map_temp Frame.temp_map) *)
-  (*          (FGraph.Flowgraph.V.label m))) *)
-  (*   !coalesceable_moves; *)
-  (* print_newline (); *)
   let active_moves = ref MoveSet.empty in
   let select_stack = ref [] in
 
@@ -183,11 +174,6 @@ let color_graph
         MoveSet.iter
           (fun m ->
             if MoveSet.mem m !active_moves then (
-              (* print_endline *)
-              (*   (Assem.format *)
-              (*      (Frame.map_temp Frame.temp_map) *)
-              (*      (FGraph.Flowgraph.V.label m) *)
-              (*   ^ " has become coalesceable"); *)
               MoveSetRef.remove m active_moves;
               MoveSetRef.add m coalesceable_moves))
           (node_moves n))
@@ -274,11 +260,9 @@ let color_graph
     TemporarySetRef.add v coalesced_nodes;
     Hashtbl.replace alias v u;
     let v_moves = Hashtbl.find_all move_list v in
-    (* TODO is this correct? *)
     List.iter (fun move -> Hashtbl.add move_list u move) v_moves;
     TemporarySet.iter
       (fun t ->
-        (* TODO *)
         IGraph.add_edge igraph t u;
         decrement_degree t)
       (adjacent v);
@@ -292,15 +276,8 @@ let color_graph
     let x = get_alias x in
     let y = get_alias y in
     let u, v = if TemporarySet.mem y precolored then (y, x) else (x, y) in
-    (* let u = x in *)
-    (* let v = y in *)
     MoveSetRef.remove m coalesceable_moves;
     if Temp.equal u v then (
-      (* print_endline *)
-      (*   ("Coalescing " *)
-      (*   ^ Assem.format *)
-      (*       (Frame.map_temp Frame.temp_map) *)
-      (*       (FGraph.Flowgraph.V.label m)); *)
       MoveSetRef.add m coalesced_moves;
       add_worklist u)
     else if TemporarySet.mem v precolored || IGraph.mem_edge igraph u v then (
@@ -313,11 +290,6 @@ let color_graph
       || (not (TemporarySet.mem u precolored))
          && conservative (TemporarySet.union (adjacent u) (adjacent v))
     then (
-      (* print_endline *)
-      (*   ("Coalescing " *)
-      (*   ^ Assem.format *)
-      (*       (Frame.map_temp Frame.temp_map) *)
-      (*       (FGraph.Flowgraph.V.label m)); *)
       MoveSetRef.add m coalesced_moves;
       combine u v;
       add_worklist u)

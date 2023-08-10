@@ -14,14 +14,6 @@ module IGraph = Imperative.Graph.Concrete (struct
   let equal a b = hash a = hash b
 end)
 
-module IGraphB = Imperative.Graph.Concrete (struct
-  type t = Temp.t
-
-  let hash = Temp.to_int
-  let compare a b = Stdlib.compare (hash a) (hash b)
-  let equal a b = hash a = hash b
-end)
-
 module LivenessCalculator = Traverse.Dfs (F)
 
 type t = {
@@ -53,11 +45,7 @@ let compute_liveness flowgraph nodes =
               (* We only consider move instructions of the form t_i <- t_j,
                  not those with memory operands and arbitrary addressing modes *)
               (* TODO *)
-              if
-                (not (String.contains assem '['))
-                && (not (Temp.equal src Frame.fp))
-                && not (Temp.equal dst Frame.fp)
-              then (
+              if not (String.contains assem '[') then (
                 ListRef.push insn moves;
                 let dst_node = IGraph.V.create dst in
                 Hashtbl.add move_list dst_node insn;
@@ -107,7 +95,6 @@ let compute_liveness flowgraph nodes =
 let interference_graph (({ control = flowgraph; _ } : FGraph.t), nodes) =
   let moves, move_list, live_map = compute_liveness flowgraph nodes in
   let graph = IGraph.create () in
-  let graph2 = IGraphB.create () in
   List.iter
     (fun node ->
       let def =
@@ -130,42 +117,5 @@ let interference_graph (({ control = flowgraph; _ } : FGraph.t), nodes) =
                    ts)
                def))
     nodes;
-  List.iter
-    (fun node ->
-      let def =
-        match F.V.label node with
-        | Assem.Move { dst; _ } | Assem.Oper { dst; _ } -> dst
-        | _ -> []
-      in
-      Hashtbl.find_opt live_map node
-      |> Option.iter (fun ts ->
-             List.iter
-               (fun d ->
-                 let node_d = IGraphB.V.create d in
-                 IGraphB.add_vertex graph2 node_d;
-                 LiveSet.iter
-                   (fun t ->
-                     let node_t = IGraphB.V.create t in
-                     IGraphB.add_vertex graph2 node_t;
-                     if not (Temp.equal d t) then
-                       IGraphB.add_edge graph2 node_d node_t)
-                   ts)
-               def))
-    nodes;
-
-  IGraph.iter_vertex
-    (fun v1 ->
-      assert (IGraphB.mem_vertex graph2 v1);
-      IGraph.iter_succ (fun s -> assert (IGraphB.mem_edge graph2 v1 s)) graph v1;
-      IGraph.iter_pred (fun s -> assert (IGraphB.mem_edge graph2 v1 s)) graph v1)
-    graph;
-  IGraphB.iter_vertex
-    (fun v2 ->
-      assert (IGraph.mem_vertex graph v2);
-      IGraphB.iter_succ
-        (fun s ->
-          assert (IGraph.mem_edge graph v2 s || IGraph.mem_edge graph s v2))
-        graph2 v2)
-    graph2;
 
   { graph; moves; move_list }
