@@ -1,12 +1,7 @@
 #include <stdint.h>
 #include <string.h>
-#include <unistd.h>
-#define exit exit_unused
 #include <stdlib.h>
-#undef exit
-#define getchar getchar_unused
 #include <stdio.h>
-#undef getchar
 
 extern int tigermain(void);
 
@@ -32,7 +27,7 @@ void flush() {
   fflush(stdout);
 }
 
-const char* getchar() {
+const char* __wrap_getchar() {
   int c = fgetc(stdin);
 
   if(c == EOF) {
@@ -57,7 +52,7 @@ int64_t ord(const char* const s) {
 
 const char* chr(int64_t i) {
   if (i<0 || i>255) {
-    _exit(1);
+    exit(1);
   }
 
   char *p = malloc(2);
@@ -96,10 +91,6 @@ const char* concat(const char* const s1, const char* const s2) {
 
 int64_t not(int64_t i) {
   return i == 0;
-}
-
-void exit(int64_t i) {
-  _exit(i);
 }
 
 int main() {
