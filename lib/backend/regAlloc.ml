@@ -119,6 +119,10 @@ let rec alloc frame procedure_body available_regs =
   let flowgraph, nodes = FGraph.make insns in
   let interference = Liveness.interference_graph (flowgraph, nodes) in
   let igraph = interference.graph in
+  (* Printf.printf "Cardinality: %d Number of edges: %d\n" *)
+  (*   (IGraph.nb_vertex igraph) (IGraph.nb_edges igraph); *)
+  (* let file = open_out (Symbol.name (Frame.name frame) ^ "_igraph.dot") in *)
+  (* Prgraph.IGraphPrinter.print igraph file; *)
   let allocation, spills, coalesced_moves =
     let precolored = Frame.temp_map in
     let degree = Hashtbl.create (List.length nodes) in
