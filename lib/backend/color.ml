@@ -299,11 +299,11 @@ let color_graph
       || (not (TemporarySet.mem u precolored))
          && conservative (TemporarySet.union (adjacent u) (adjacent v))
     then (
-      print_endline
-        ("Coalescing "
-        ^ Assem.format
-            (Frame.map_temp Frame.temp_map)
-            (FGraph.Flowgraph.V.label m));
+      (* print_endline *)
+      (*   ("Coalescing " *)
+      (*   ^ Assem.format *)
+      (*       (Frame.map_temp Frame.temp_map) *)
+      (*       (FGraph.Flowgraph.V.label m)); *)
       MoveSetRef.add m coalesced_moves;
       combine u v;
       add_worklist u)
