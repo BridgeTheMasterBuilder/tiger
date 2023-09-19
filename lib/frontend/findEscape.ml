@@ -56,8 +56,7 @@ and traverse_dec env depth = function
   | A.FunctionDec decs ->
       (* TODO is this correct? *)
       List.iter
-        (fun dec ->
-          match dec with
+        (function
           | A.Fundec { body; params; _ } ->
               let env' =
                 List.fold_left

@@ -1,0 +1,5 @@
+let type r = {a: int} in
+while 1 do
+	let var x := r {a=0} in
+	end
+end

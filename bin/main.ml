@@ -1,6 +1,7 @@
 open Cmdliner
 open Tigerc_lib
 
+(* TODO add arguments to print AST, IR, graphs etc. *)
 let parse_args () =
   let source_file =
     Arg.(

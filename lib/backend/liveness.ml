@@ -44,7 +44,7 @@ let compute_liveness flowgraph nodes =
           | Assem.Move { assem; src = [ src ]; dst = [ dst ]; _ } ->
               (* We only consider move instructions of the form t_i <- t_j,
                  not those with memory operands and arbitrary addressing modes *)
-              (* TODO *)
+              (* TODO this isn't portable, maybe add a predicate to Assem *)
               if not (String.contains assem '[') then (
                 ListRef.push insn moves;
                 let dst_node = IGraph.V.create dst in

@@ -5,6 +5,15 @@ open Backend
 open Backend.Frame
 open Backend.Codegen
 
+let rec program_loop () =
+  let _ = print_endline "Input proper input" in
+    let input = read_line () in
+      (match input with
+      | "add" -> print_endline "Input is add"
+      | "print" -> print_endline "Input is print"
+      | _ -> print_endline "Invalid input";
+      program_loop ());
+
 let run filename output_assembly =
   try
     ErrorMsg.filename := filename;
@@ -33,8 +42,7 @@ let run filename output_assembly =
     let string_literals = ref [] in
     Printf.fprintf output_channel "section .text\n";
     List.iter
-      (fun frag ->
-        match frag with
+      (function
         | Frame.Proc { body; frame } ->
             let stms = Canon.linearize body in
             let blocks = Canon.basic_blocks stms in
@@ -42,17 +50,16 @@ let run filename output_assembly =
             let insns = List.map Codegen.codegen trace |> List.flatten in
             let print_insns insns allocation =
               List.iter
-                (fun insn ->
-                  match insn with
+                (function
                   | Assem.Move { assem; dst = [ dst ]; src = [ src ]; _ }
                     when (not (String.contains assem '['))
-                         (* TODO *)
+                         (* TODO this isn't portable, maybe add a predicate to Assem *)
                          && String.equal
                               (Hashtbl.find allocation dst)
                               (Hashtbl.find allocation src) ->
                       (* Ignore self-moves *)
                       ()
-                  | _ ->
+                  | insn ->
                       let s = Assem.format (Frame.map_temp allocation) insn in
                       if not (String.equal s "") then
                         Printf.fprintf output_channel "%s\n" s)
@@ -84,8 +91,8 @@ let run filename output_assembly =
     then (
       if
         Sys.command
-          ("gcc -no-pie -fno-builtin -Wl,--no-warn-execstack " ^ " runtime.o "
-         ^ object_file)
+          ("gcc -no-pie -Wl,--no-warn-execstack -Wl,--wrap=getchar"
+         ^ " runtime.o " ^ object_file)
         <> 0
       then ErrorMsg.impossible "Linking phase failed.")
     else ErrorMsg.impossible "Compiler emitted invalid assembly code.";

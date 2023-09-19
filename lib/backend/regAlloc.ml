@@ -74,6 +74,7 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
         ( ({ prologue; body = List.rev body; epilogue; sink } : Frame.body),
           available_regs )
   in
+  (* TODO just let the compiler use whatever register it wants and use the allocation table afterwards to figure out which registers to save *)
   match available_regs with
   | reg :: regs ->
       let src =

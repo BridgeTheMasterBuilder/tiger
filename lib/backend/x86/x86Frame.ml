@@ -122,8 +122,7 @@ let print_frame frame =
   let { label; formals; locals; _ } = frame in
   Printf.printf "New frame: %s\nFormals:\n" (Symbol.name label);
   List.iter
-    (fun formal ->
-      match formal with
+    (function
       | InFrame offset ->
           Printf.printf "Frame-resident variable at offset %d\n" offset
       | InReg temp ->
