@@ -5,7 +5,7 @@
 
 extern int tigermain(void);
 
-int64_t *initArray(size_t size, int64_t init) {
+int64_t *init_array(size_t size, int64_t init) {
   int64_t *a = malloc(size * sizeof(int64_t));
 
   for(size_t i=0; i<size; i++) {
@@ -15,7 +15,11 @@ int64_t *initArray(size_t size, int64_t init) {
   return a;
 }
 
-int64_t strCmp(const char* const s1, const char* const s2) {
+int64_t *alloc_record(size_t size) {
+  return malloc(size * sizeof(int64_t));
+}
+
+int64_t str_cmp(const char* const s1, const char* const s2) {
   return strcmp(s1, s2);
 }
 

@@ -4,7 +4,6 @@ open Util
 open FGraph
 module F = Flowgraph
 open Graph
-open Frame
 
 module IGraph = Imperative.Graph.Concrete (struct
   type t = Temp.t

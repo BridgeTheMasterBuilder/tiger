@@ -5,15 +5,6 @@ open Backend
 open Backend.Frame
 open Backend.Codegen
 
-let rec program_loop () =
-  let _ = print_endline "Input proper input" in
-    let input = read_line () in
-      (match input with
-      | "add" -> print_endline "Input is add"
-      | "print" -> print_endline "Input is print"
-      | _ -> print_endline "Invalid input";
-      program_loop ());
-
 let run filename output_assembly =
   try
     ErrorMsg.filename := filename;
@@ -35,9 +26,9 @@ let run filename output_assembly =
     Symbol.iter
       (fun k _ -> Printf.fprintf output_channel "extern %s\n" (Symbol.name k))
       Env.base_venv;
-    Printf.fprintf output_channel "extern initArray\n";
-    Printf.fprintf output_channel "extern malloc\n";
-    Printf.fprintf output_channel "extern strCmp\n\n";
+    Printf.fprintf output_channel "extern init_array\n";
+    Printf.fprintf output_channel "extern alloc_record\n";
+    Printf.fprintf output_channel "extern str_cmp\n\n";
     Printf.fprintf output_channel "global tigermain\n\n";
     let string_literals = ref [] in
     Printf.fprintf output_channel "section .text\n";

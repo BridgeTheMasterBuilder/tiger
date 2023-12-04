@@ -156,7 +156,7 @@ let cond_exp o e1 e2 =
 let str_cond_exp o e1 e2 =
   let e1 = un_ex e1 in
   let e2 = un_ex e2 in
-  let r = Ex (Frame.external_call "strCmp" [ e1; e2 ]) in
+  let r = Ex (Frame.external_call "str_cmp" [ e1; e2 ]) in
   let z = Ex (T.Const 0) in
   cond_exp o r z
 
@@ -176,8 +176,8 @@ let record_exp exps =
         ( Seq
             ( Move
                 ( Temp r,
-                  Frame.external_call "malloc" [ Const (n * Frame.word_size) ]
-                ),
+                  Frame.external_call "alloc_record"
+                    [ Const (n * Frame.word_size) ] ),
               seq exps ),
           Temp r ))
 
@@ -253,7 +253,7 @@ let let_exp decs body =
 let array_exp length init =
   let length = un_ex length in
   let init = un_ex init in
-  Ex (Frame.external_call "initArray" [ length; init ])
+  Ex (Frame.external_call "init_array" [ length; init ])
 
 let varDec var exp =
   let var = un_ex var in

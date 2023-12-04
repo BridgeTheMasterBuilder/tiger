@@ -5,6 +5,3 @@
  (release
   (ocamlopt_flags
    (:standard -O3))))
-
-(test
- (name tigerc))
