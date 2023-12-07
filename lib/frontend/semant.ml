@@ -31,10 +31,10 @@ let lookup_var venv name pos = lookup venv name pos "Undeclared identifier %s"
 
 let rec types_equal tenv ty1 ty2 pos =
   match (ty1, ty2) with
-  | Types.Record (_, id1), Types.Record (_, id2) -> Equal.physical id1 id2
+  | Types.Record (_, id1, _), Types.Record (_, id2, _) -> Equal.physical id1 id2
   | Types.Record _, Types.Nil -> true
   | Types.Nil, Types.Record _ -> true
-  | Types.Array (_, id1), Types.Array (_, id2) -> Equal.physical id1 id2
+  | Types.Array (_, id1, _), Types.Array (_, id2, _) -> Equal.physical id1 id2
   | Types.Name (name, _), ty2 ->
       let ty1 = lookup_type tenv name pos in
       types_equal tenv ty1 ty2 pos
@@ -53,7 +53,7 @@ let check_string exp pos = check_type exp Types.String pos "Expected string"
 
 let check_record exp id1 pos =
   match exp.ty with
-  | Types.Record (_, id2) ->
+  | Types.Record (_, id2, _) ->
       if not (Equal.physical id1 id2) then
         ErrorMsg.fatal_error pos "Record types don't match"
   | Types.Nil -> ()
@@ -61,7 +61,7 @@ let check_record exp id1 pos =
 
 let check_array exp id1 pos =
   match exp.ty with
-  | Types.Array (_, id2) ->
+  | Types.Array (_, id2, _) ->
       if not (Equal.physical id1 id2) then
         ErrorMsg.fatal_error pos "Array types don't match"
   | _ -> ErrorMsg.fatal_error pos "Expected array type"
@@ -124,8 +124,8 @@ let rec trans_exp venv tenv level break =
             (match left.ty with
             | Types.Int -> check_int right pos
             | Types.String -> check_string right pos
-            | Types.Array (_, id) -> check_array right id pos
-            | Types.Record (_, id) -> check_record right id pos
+            | Types.Array (_, id, _) -> check_array right id pos
+            | Types.Record (_, id, _) -> check_record right id pos
             | Types.Nil -> check_record right (ref ()) pos
             | _ ->
                 ErrorMsg.fatal_error pos "Can't compare %s with %s for equality"
@@ -164,7 +164,7 @@ let rec trans_exp venv tenv level break =
     | A.RecordExp { fields; typ; pos } -> (
         let ty = lookup_type tenv typ pos in
         match ty with
-        | Types.Record (record_fields, _) ->
+        | Types.Record (record_fields, _, descr) ->
             let fields =
               List.mapi (fun i (field, exp, pos) -> (i, field, exp, pos)) fields
             in
@@ -202,7 +202,8 @@ let rec trans_exp venv tenv level break =
                   (of_list exps)
                 |> map snd |> to_list)
             in
-            { exp = Translate.record_exp exps; ty }
+            let descr = Translate.string_exp descr in
+            { exp = Translate.record_exp exps descr; ty }
         | _ ->
             ErrorMsg.fatal_error pos "%s is not a record type" (Symbol.name typ)
         )
@@ -332,7 +333,7 @@ let rec trans_exp venv tenv level break =
         let ty = lookup_type tenv typ pos in
         let ty = lookup_name tenv ty pos in
         match ty with
-        | Types.Array (typ, _) ->
+        | Types.Array (typ, _, _descr) ->
             let size = trexp break size in
             check_int size pos;
             let init = trexp break init in
@@ -343,7 +344,10 @@ let rec trans_exp venv tenv level break =
                  expected "
                 (Types.string_of_ty init.ty)
                 (Types.string_of_ty typ);
-            { exp = Translate.array_exp size.exp init.exp; ty }
+            let elt_is_pointer =
+              Translate.int_exp (Bool.to_int (Types.is_pointer ty))
+            in
+            { exp = Translate.array_exp size.exp init.exp elt_is_pointer; ty }
         | _ ->
             ErrorMsg.fatal_error pos "%s is not an array type" (Symbol.name typ)
         )
@@ -532,7 +536,7 @@ and trans_var venv tenv level break = function
       | _ -> ErrorMsg.fatal_error pos "%s is not a variable" (Symbol.name var))
   | A.FieldVar (var, field, pos) -> (
       match trans_var venv tenv level break var with
-      | { exp; ty = Types.Record (fields, _) } -> (
+      | { exp; ty = Types.Record (fields, _, _) } -> (
           match
             List.find_idx
               (fun (record_field, _) -> Symbol.equal record_field field)
@@ -546,7 +550,7 @@ and trans_var venv tenv level break = function
   | A.SubscriptVar (var, idx, pos) -> (
       let var = trans_var venv tenv level break var in
       match var with
-      | { exp; ty = Types.Array (typ, _) } ->
+      | { exp; ty = Types.Array (typ, _, _) } ->
           let idx = trans_exp venv tenv level break idx in
           check_int idx pos;
           { exp = Translate.subscript_var exp idx.exp; ty = typ }
@@ -557,15 +561,19 @@ and transTy tenv = function
   | A.NameTy (name, pos) ->
       Types.Name (name, ref (Some (lookup_type tenv name pos)))
   | A.RecordTy fields ->
+      let descr = Buffer.create (List.length fields) in
       let fields =
         List.map
           (fun ({ fd_name; typ; fd_pos; _ } : A.field) ->
             let ty = lookup_type tenv typ fd_pos in
+            Buffer.add_char descr (if Types.is_pointer ty then 'p' else 'n');
             (fd_name, ty))
           fields
       in
-      Types.Record (fields, ref ())
-  | A.ArrayTy (name, pos) -> Types.Array (lookup_type tenv name pos, ref ())
+      Types.Record (fields, ref (), Buffer.contents descr)
+  | A.ArrayTy (name, pos) ->
+      let ty = lookup_type tenv name pos in
+      Types.Array (ty, ref (), Types.is_pointer ty)
 
 let transProg exp =
   let unused_label = Temp.new_label () in

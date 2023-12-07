@@ -20,7 +20,7 @@ val call_exp : Symbol.symbol -> access list -> exp list -> level -> level -> exp
 val arith_exp : Absyn.oper -> exp -> exp -> exp
 val cond_exp : Absyn.oper -> exp -> exp -> exp
 val str_cond_exp : Absyn.oper -> exp -> exp -> exp
-val record_exp : exp list -> exp
+val record_exp : exp list -> exp -> exp
 val seq_exp : exp list -> exp
 val assign_exp : exp -> exp -> exp
 val if_exp : exp -> exp -> exp option -> exp
@@ -28,7 +28,7 @@ val while_exp : exp -> exp -> Symbol.symbol -> exp
 val unit_exp : unit -> exp
 val break_exp : Symbol.symbol -> exp
 val let_exp : exp list -> exp -> exp
-val array_exp : exp -> exp -> exp
+val array_exp : exp -> exp -> exp -> exp
 val varDec : exp -> exp -> exp
 val simple_var : access -> level -> exp
 val field_var : exp -> int -> exp

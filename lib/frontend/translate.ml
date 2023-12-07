@@ -160,24 +160,23 @@ let str_cond_exp o e1 e2 =
   let z = Ex (T.Const 0) in
   cond_exp o r z
 
-let record_exp exps =
-  let n = List.length exps in
+let record_exp exps descr =
   let r = Temp.newtemp () in
   let exps =
     List.mapi
       (fun i exp ->
         let exp = un_ex exp in
-        T.(Move (Mem (Binop (Plus, Temp r, Const (i * Frame.word_size))), exp)))
+        T.(
+          Move
+            (Mem (Binop (Plus, Temp r, Const ((i + 1) * Frame.word_size))), exp)))
       exps
   in
+  let descr = un_ex descr in
   Ex
     T.(
       Eseq
         ( Seq
-            ( Move
-                ( Temp r,
-                  Frame.external_call "alloc_record"
-                    [ Const (n * Frame.word_size) ] ),
+            ( Move (Temp r, Frame.external_call "alloc_record" [ descr ]),
               seq exps ),
           Temp r ))
 
@@ -250,10 +249,11 @@ let let_exp decs body =
   let body = un_ex body in
   if List.is_empty decs then Ex body else Ex (T.Eseq (seq decs, body))
 
-let array_exp length init =
+let array_exp length init elt_is_pointer =
   let length = un_ex length in
   let init = un_ex init in
-  Ex (Frame.external_call "init_array" [ length; init ])
+  let elt_is_pointer = un_ex elt_is_pointer in
+  Ex (Frame.external_call "init_array" [ length; init; elt_is_pointer ])
 
 let varDec var exp =
   let var = un_ex var in
@@ -268,9 +268,17 @@ let simple_var access use_level =
 
 let field_var exp i =
   let exp = un_ex exp in
-  Ex T.(Mem (Binop (Plus, exp, Binop (Mul, Const i, Const Frame.word_size))))
+  Ex
+    T.(
+      Mem (Binop (Plus, exp, Binop (Mul, Const (i + 1), Const Frame.word_size))))
 
 let subscript_var exp idx =
   let exp = un_ex exp in
   let idx = un_ex idx in
-  Ex T.(Mem (Binop (Plus, exp, Binop (Mul, idx, Const Frame.word_size))))
+  Ex
+    T.(
+      Mem
+        (Binop
+           ( Plus,
+             exp,
+             Binop (Mul, Binop (Plus, idx, Const 1), Const Frame.word_size) )))

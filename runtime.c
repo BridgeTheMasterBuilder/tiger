@@ -5,21 +5,28 @@
 
 extern int tigermain(void);
 
-int64_t *init_array(size_t size, int64_t init) {
-  int64_t *a = malloc(size * sizeof(int64_t));
+intptr_t* init_array(size_t size, intptr_t init, intptr_t elt_is_pointer) {
+  intptr_t* a = (intptr_t *) malloc((size+1) * sizeof(intptr_t));
 
-  for(size_t i=0; i<size; i++) {
+  for(size_t i=1; i<size+1; i++) {
     a[i] = init;
   }
+
+  a[0] = elt_is_pointer;
 
   return a;
 }
 
-int64_t *alloc_record(size_t size) {
-  return malloc(size * sizeof(int64_t));
+intptr_t* alloc_record(const char* const descr) {
+  size_t size = strlen(descr) + 1;
+  void* record = malloc(size * sizeof(intptr_t ));
+
+  memcpy(record, descr, sizeof (intptr_t));
+
+  return (intptr_t *) record;
 }
 
-int64_t str_cmp(const char* const s1, const char* const s2) {
+intptr_t str_cmp(const char* const s1, const char* const s2) {
   return strcmp(s1, s2);
 }
 
@@ -46,7 +53,7 @@ const char* __wrap_getchar() {
   }
 }
 
-int64_t ord(const char* const s) {
+intptr_t ord(const char* const s) {
   if(strcmp(s, "") == 0) {
     return -1;
   } else {
@@ -54,7 +61,7 @@ int64_t ord(const char* const s) {
   }
 }
 
-const char* chr(int64_t i) {
+const char* chr(intptr_t i) {
   if (i<0 || i>255) {
     exit(1);
   }
@@ -67,7 +74,7 @@ const char* chr(int64_t i) {
   return p;
 }
 
-int64_t size(const char* const s) {
+intptr_t size(const char* const s) {
   return strlen(s);
 }
 
@@ -93,7 +100,7 @@ const char* concat(const char* const s1, const char* const s2) {
   return s;
 }
 
-int64_t not(int64_t i) {
+intptr_t not(intptr_t i) {
   return i == 0;
 }
 
