@@ -5,3 +5,14 @@
  (release
   (ocamlopt_flags
    (:standard -O3))))
+
+(data_only_dirs runtime)
+
+; (rule
+;  (deps (source_tree runtime))
+;  (targets runtime.o)
+;  (action
+;  (no-infer
+;    (progn
+;     (chdir runtime (run make))
+;     (copy runtime/runtime.o runtime.o)))))
