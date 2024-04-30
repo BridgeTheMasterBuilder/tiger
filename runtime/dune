@@ -1,0 +1,6 @@
+; (rule
+;  (deps runtime.c)
+;  (targets runtime.o)
+;  (action
+;  (no-infer
+;   (run make))))

@@ -93,8 +93,8 @@ const char* concat(const char* const s1, const char* const s2) {
   size_t length = s1_length + s2_length + 1;
   char *s = malloc(length);
 
-  strncpy(s, s1, s1_length);
-  strncpy(s, s1+s1_length, s2_length);
+  memcpy(s, s1, s1_length);
+  memcpy(s, s1+s1_length, s2_length);
   s[length] = 0;
 
   return s;

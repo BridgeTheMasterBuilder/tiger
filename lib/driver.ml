@@ -82,8 +82,10 @@ let run filename output_assembly =
     then (
       if
         Sys.command
-          ("gcc -no-pie -Wl,--no-warn-execstack -Wl,--wrap=getchar"
-         ^ " runtime.o " ^ object_file)
+          (Printf.sprintf
+             "gcc -no-pie -Wl,--no-warn-execstack -Wl,--wrap=getchar \
+              runtime/runtime.o %s"
+             object_file)
         <> 0
       then ErrorMsg.impossible "Linking phase failed.")
     else ErrorMsg.impossible "Compiler emitted invalid assembly code.";

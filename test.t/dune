@@ -1,2 +1,5 @@
 (test
  (name tigerc))
+
+(cram
+ (deps %{bin:tigerc} %{runtime}))
