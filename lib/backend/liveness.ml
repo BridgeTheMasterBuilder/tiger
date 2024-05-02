@@ -14,17 +14,19 @@ module IGraph = Imperative.Graph.Concrete (struct
 end)
 
 module LivenessCalculator = Traverse.Dfs (F)
+module LiveSet = Set.Make (Temp)
+
+type live_set = LiveSet.t
+type live_map = (F.vertex, live_set) Hashtbl.t
 
 type t = {
   graph : IGraph.t;
-  moves : F.vertex list;
-  move_list : (IGraph.vertex, F.vertex) Hashtbl.t;
+  (* tnode : Temp.t -> IGraph.vertex; *)
+  (* gtemp : IGraph.vertex -> Temp.t; *)
+  moves : FGraph.Flowgraph.vertex list;
+  move_list : (IGraph.vertex, FGraph.Flowgraph.vertex) Hashtbl.t;
+  live_map : live_map;
 }
-
-module LiveSet = Set.Make (Temp)
-
-type liveSet = LiveSet.t
-type liveMap = (F.vertex, liveSet) Hashtbl.t
 
 module ReferenceMap = CCMultiMap.MakeBidir (Temp) (Int)
 
@@ -51,7 +53,10 @@ let compute_liveness flowgraph nodes =
                 let src_node = IGraph.V.create src in
                 Hashtbl.add move_list src_node insn);
               ([ src ], [ dst ])
-          | Assem.Oper { src; dst; _ } | Assem.Move { src; dst; _ } -> (src, dst)
+          | Assem.Oper { src; dst; _ }
+          | Assem.Move { src; dst; _ }
+          | Assem.Call { src; dst; _ } ->
+              (src, dst)
           | _ -> ([], [])
         in
         let live_out_set =
@@ -98,7 +103,9 @@ let interference_graph (({ control = flowgraph; _ } : FGraph.t), nodes) =
     (fun node ->
       let def =
         match F.V.label node with
-        | Assem.Move { dst; _ } | Assem.Oper { dst; _ } -> dst
+        | Assem.Move { dst; _ } | Assem.Oper { dst; _ } | Assem.Call { dst; _ }
+          ->
+            dst
         | _ -> []
       in
       Hashtbl.find_opt live_map node
@@ -117,4 +124,4 @@ let interference_graph (({ control = flowgraph; _ } : FGraph.t), nodes) =
                def))
     nodes;
 
-  { graph; moves; move_list }
+  { graph; moves; move_list; live_map }

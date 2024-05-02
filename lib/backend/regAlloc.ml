@@ -27,8 +27,10 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
     | insn :: insns ->
         let src, dst =
           match insn with
-          | Assem.Move { src; dst; _ } -> (src, dst)
-          | Assem.Oper { src; dst; _ } -> (src, dst)
+          | Assem.Move { src; dst; _ }
+          | Assem.Oper { src; dst; _ }
+          | Assem.Call { src; dst; _ } ->
+              (src, dst)
           | _ -> ([], [])
         in
         (* TODO extract to function *)
@@ -153,4 +155,4 @@ let rec alloc frame procedure_body available_regs =
             ~key:m nodes)
         coalesced_moves nodes
     in
-    (List.map FGraph.Flowgraph.V.label nodes, allocation)
+    (List.map FGraph.Flowgraph.V.label nodes, allocation, interference.live_map)

@@ -2,6 +2,10 @@ open Agnostic
 open Containers
 open Graph
 module IGraph : Sig.I with type V.label = Temp.t and type V.t = Temp.t
+module LiveSet : Set.S with type elt = Temp.t
+
+type live_set = LiveSet.t
+type live_map = (FGraph.Flowgraph.vertex, live_set) Hashtbl.t
 
 type t = {
   graph : IGraph.t;
@@ -9,12 +13,8 @@ type t = {
   (* gtemp : IGraph.vertex -> Temp.t; *)
   moves : FGraph.Flowgraph.vertex list;
   move_list : (IGraph.vertex, FGraph.Flowgraph.vertex) Hashtbl.t;
+  live_map : live_map;
 }
-
-module LiveSet : Set.S with type elt = Temp.t
-
-type liveSet = LiveSet.t
-type liveMap = (FGraph.Flowgraph.vertex, liveSet) Hashtbl.t
 
 module ReferenceMap :
   CCMultiMap.BIDIR with type left = Temp.t and type right = int

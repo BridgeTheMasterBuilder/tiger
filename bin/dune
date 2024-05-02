@@ -3,3 +3,6 @@
  (name main)
  (modules main)
  (libraries tigerc_lib cmdliner))
+
+(cram
+ (deps %{bin:tigerc}))

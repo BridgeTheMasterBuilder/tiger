@@ -57,7 +57,7 @@ let run filename output_assembly =
                 insns
             in
             let body = Frame.proc_entry_exit frame insns in
-            let insns, allocation =
+            let insns, allocation, live_map =
               RegAlloc.alloc frame body Frame.calleesaves
             in
             print_insns insns allocation

@@ -67,6 +67,7 @@ let make insns =
                 F.add_edge flowgraph.control src_node dst_node;
                 let next = Hashtbl.find labels f in
                 (Some next, dst, src)
+            | Assem.Call { src; dst; _ } -> (next, dst, src)
             | Assem.Label _ -> (next, [], [])
             | _ -> ErrorMsg.impossible "Couldn't construct control flow graph"
           in

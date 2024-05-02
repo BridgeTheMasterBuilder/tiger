@@ -128,12 +128,18 @@ let codegen stm =
     | T.Call (T.Name f, args) ->
         result (fun r ->
             emit
-              (A.Oper
+              (* (A.Oper *)
+              (*    { *)
+              (*      assem = "call " ^ Symbol.name f; *)
+              (*      src = munch_args 0 args; *)
+              (*      dst = X86Frame.calldefs; *)
+              (*      jump = None; *)
+              (*    }); *)
+              (A.Call
                  {
                    assem = "call " ^ Symbol.name f;
                    src = munch_args 0 args;
                    dst = X86Frame.calldefs;
-                   jump = None;
                  });
             emit
               (A.Move

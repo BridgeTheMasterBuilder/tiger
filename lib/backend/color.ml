@@ -32,7 +32,8 @@ module MoveSet = Set.Make (struct
       match FGraph.Flowgraph.V.label insn with
       | Assem.Label { assem; _ }
       | Assem.Move { assem; _ }
-      | Assem.Oper { assem; _ } ->
+      | Assem.Oper { assem; _ }
+      | Assem.Call { assem; _ } ->
           assem
     in
     Stdlib.compare (extract_text a) (extract_text b)

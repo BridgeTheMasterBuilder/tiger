@@ -94,13 +94,7 @@ let string_exp s =
 
 let external_call f args =
   let args = List.map un_ex args in
-  (* Ex (Frame.external_call f args) *)
-  let ret = Temp.named_label "ret" in
-  let t = Temp.newtemp () in
-  (* Nx (seq [ Exp (Frame.external_call f args); Label ret ]) *)
-  Ex
-    (Eseq
-       (seq [ T.Move (Temp t, Frame.external_call f args); Label ret ], Temp t))
+  Ex (Frame.external_call f args)
 
 let create_static_link_chain use_level dec_level =
   let rec aux level =
@@ -127,26 +121,7 @@ let call_exp f formals args use_level dec_level =
   let formals =
     List.map (fun (_, formal) -> Frame.frame_resident formal) formals
   in
-  (* Ex (T.Call (T.Name f, List.combine (sl :: args) (true :: formals))) *)
-  let ret = Temp.named_label "ret" in
-  let t = Temp.newtemp () in
-  (* Nx *)
-  (*   (seq *)
-  (*      [ *)
-  (*        Exp (T.Call (T.Name f, List.combine (sl :: args) (true :: formals))); *)
-  (*        Label ret; *)
-  (*      ]) *)
-  Ex
-    (Eseq
-       ( seq
-           [
-             T.(
-               Move
-                 ( Temp t,
-                   Call (Name f, List.combine (sl :: args) (true :: formals)) ));
-             Label ret;
-           ],
-         Temp t ))
+  Ex (T.Call (T.Name f, List.combine (sl :: args) (true :: formals)))
 
 let arith_exp o e1 e2 =
   let module A = Absyn in
@@ -179,10 +154,9 @@ let cond_exp o e1 e2 =
   Cx (fun t f -> T.Cjump (o, e1, e2, t, f))
 
 let str_cond_exp o e1 e2 =
-  (* let e1 = un_ex e1 in *)
-  (* let e2 = un_ex e2 in *)
-  (* let r = Ex (Frame.external_call "str_cmp" [ e1; e2 ]) in *)
-  let r = external_call "str_cmp" [ e1; e2 ] in
+  let e1 = un_ex e1 in
+  let e2 = un_ex e2 in
+  let r = Ex (Frame.external_call "str_cmp" [ e1; e2 ]) in
   let z = Ex (T.Const 0) in
   cond_exp o r z
 
@@ -197,19 +171,12 @@ let record_exp exps descr =
             (Mem (Binop (Plus, Temp r, Const ((i + 1) * Frame.word_size))), exp)))
       exps
   in
-  (* let descr = un_ex descr in *)
-  (* Ex *)
-  (*   T.( *)
-  (*     Eseq *)
-  (*       ( Seq *)
-  (*           ( Move (Temp r, Frame.external_call "alloc_record" [ descr ]), *)
-  (*             seq exps ), *)
-  (*         Temp r )) *)
+  let descr = un_ex descr in
   Ex
     T.(
       Eseq
         ( Seq
-            ( Move (Temp r, un_ex (external_call "alloc_record" [ descr ])),
+            ( Move (Temp r, Frame.external_call "alloc_record" [ descr ]),
               seq exps ),
           Temp r ))
 
@@ -283,11 +250,10 @@ let let_exp decs body =
   if List.is_empty decs then Ex body else Ex (T.Eseq (seq decs, body))
 
 let array_exp length init elt_is_pointer =
-  (* let length = un_ex length in *)
-  (* let init = un_ex init in *)
-  (* let elt_is_pointer = un_ex elt_is_pointer in *)
-  (* Ex (Frame.external_call "init_array" [ length; init; elt_is_pointer ]) *)
-  external_call "init_array" [ length; init; elt_is_pointer ]
+  let length = un_ex length in
+  let init = un_ex init in
+  let elt_is_pointer = un_ex elt_is_pointer in
+  Ex (Frame.external_call "init_array" [ length; init; elt_is_pointer ])
 
 let varDec var exp =
   let var = un_ex var in
