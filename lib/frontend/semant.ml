@@ -102,9 +102,14 @@ let rec trans_exp venv tenv level break =
         let formals = Translate.formals level_f in
         {
           exp =
-            (if Option.is_some (Symbol.look Env.base_venv label) then
-               Translate.external_call (Symbol.name label) args
-             else Translate.call_exp label formals args level level_f);
+            (match Symbol.look Env.base_venv label with
+            | Some (Env.FunEntry { result; _ }) ->
+                Translate.external_call (Symbol.name label) args
+                  (types_equal tenv result Types.String pos)
+            | _ -> Translate.call_exp label formals args level level_f);
+          (* (if Option.is_some (Symbol.look Env.base_venv label) then *)
+          (*    Translate.external_call (Symbol.name label) args *)
+          (*  else Translate.call_exp label formals args level level_f); *)
           ty = result;
         }
     | A.OpExp { left; oper; right; pos } -> (

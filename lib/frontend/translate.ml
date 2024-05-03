@@ -92,9 +92,12 @@ let string_exp s =
       Hashtbl.add string_map s label;
       Ex (T.Name label)
 
-let external_call f args =
+let external_call f args allocates =
   let args = List.map un_ex args in
-  Ex (Frame.external_call f args)
+  let t = Temp.newtemp () in
+  Hashtbl.replace Temp.pointer_map t allocates;
+  (* Ex (Frame.external_call f args) *)
+  Ex T.(Eseq (Move (Temp t, Frame.external_call f args), Temp t))
 
 let create_static_link_chain use_level dec_level =
   let rec aux level =
@@ -162,6 +165,7 @@ let str_cond_exp o e1 e2 =
 
 let record_exp exps descr =
   let r = Temp.newtemp () in
+  Hashtbl.replace Temp.pointer_map r true;
   let exps =
     List.mapi
       (fun i exp ->
@@ -206,6 +210,7 @@ let if_exp test then' else' =
       let t = Temp.new_label () in
       let f = Temp.new_label () in
       let join = Temp.new_label () in
+      (* TODO May be pointer *)
       Ex
         T.(
           Eseq
@@ -250,10 +255,19 @@ let let_exp decs body =
   if List.is_empty decs then Ex body else Ex (T.Eseq (seq decs, body))
 
 let array_exp length init elt_is_pointer =
+  let a = Temp.newtemp () in
+  Hashtbl.replace Temp.pointer_map a true;
   let length = un_ex length in
   let init = un_ex init in
   let elt_is_pointer = un_ex elt_is_pointer in
-  Ex (Frame.external_call "init_array" [ length; init; elt_is_pointer ])
+  Ex
+    T.(
+      Eseq
+        ( Move
+            ( Temp a,
+              Frame.external_call "init_array" [ length; init; elt_is_pointer ]
+            ),
+          Temp a ))
 
 let varDec var exp =
   let var = un_ex var in

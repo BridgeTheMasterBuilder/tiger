@@ -2,5 +2,4 @@
  (name tigerc))
 
 (cram
- ; (deps ../_build/install/default/bin/tigerc))
  (deps %{bin:tigerc}))

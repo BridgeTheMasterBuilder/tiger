@@ -5,11 +5,13 @@ type t = temp
 type label = Symbol.symbol
 type 'a table = (t, 'a) Hashtbl.t
 
+let pointer_map = Hashtbl.create 1000
 let nexttemp = ref 0
 
 let newtemp () =
   let temp = !nexttemp in
   incr nexttemp;
+  Hashtbl.replace pointer_map temp false;
   temp
 
 let to_int temp = temp

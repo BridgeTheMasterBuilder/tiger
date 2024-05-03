@@ -146,6 +146,8 @@ let new_frame label escapes =
           let temp = List.nth argregs i in
           decr avail_registers;
           let t = Temp.newtemp () in
+          Hashtbl.replace Temp.pointer_map t
+            (Hashtbl.get_or ~default:false Temp.pointer_map temp);
           let insn =
             Assem.Move { assem = "mov `d0, `s0"; dst = [ t ]; src = [ temp ] }
           in

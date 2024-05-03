@@ -9,5 +9,6 @@
   prtree
   assem
   abstractFrame
-  abstractCodegen)
+  abstractCodegen
+  pointerMap)
  (libraries containers util))

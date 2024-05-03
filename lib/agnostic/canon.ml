@@ -20,6 +20,7 @@ let linearize stm0 =
 
   let rec reorder = function
     | (T.Call _ as e) :: rest ->
+        (* TODO May be pointer *)
         let t = Temp.newtemp () in
         reorder (T.Eseq (T.Move (T.Temp t, e), T.Temp t) :: rest)
     | a :: rest ->
@@ -27,6 +28,7 @@ let linearize stm0 =
         let stms', el = reorder rest in
         if commute (stms', e) then (stms % stms', e :: el)
         else
+          (* TODO May be pointer *)
           let t = Temp.newtemp () in
           (stms % (T.Move (T.Temp t, e) % stms'), T.Temp t :: el)
     | [] -> (nop, [])

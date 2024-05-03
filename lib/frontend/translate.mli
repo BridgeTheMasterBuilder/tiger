@@ -15,7 +15,7 @@ val get_result : unit -> Frame.frag list
 val nil_exp : unit -> exp
 val int_exp : int -> exp
 val string_exp : string -> exp
-val external_call : string -> exp list -> exp
+val external_call : string -> exp list -> bool -> exp
 val call_exp : Symbol.symbol -> access list -> exp list -> level -> level -> exp
 val arith_exp : Absyn.oper -> exp -> exp -> exp
 val cond_exp : Absyn.oper -> exp -> exp -> exp

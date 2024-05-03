@@ -57,6 +57,7 @@ let codegen stm =
          { assem = "j" ^ cc ^ " `j0"; dst = []; src = []; jump = Some [ t; f ] })
   in
   let result gen =
+    (* TODO May be pointer *)
     let t = Temp.newtemp () in
     gen t;
     t

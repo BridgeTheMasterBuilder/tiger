@@ -38,6 +38,7 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
           match (List.mem t src, List.mem t dst) with
           | true, true ->
               let fetch, temp =
+                (* TODO May be pointer *)
                 let temp = Temp.newtemp () in
                 let move = Tree.(Move (Temp temp, local)) |> Codegen.codegen in
                 let insn = update_references t temp insn in
@@ -46,6 +47,7 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
               let store = Tree.(Move (local, Temp temp)) |> Codegen.codegen in
               (store @ fetch, None)
           | true, false ->
+              (* TODO May be pointer *)
               let temp = Temp.newtemp () in
               let move = Tree.(Move (Temp temp, local)) |> Codegen.codegen in
               let insn = update_references t temp insn in
@@ -54,6 +56,7 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
               let fetch =
                 match saved_temp with
                 | None ->
+                    (* TODO May be pointer *)
                     let temp = Temp.newtemp () in
                     let insn = update_references t temp insn in
                     let move =
