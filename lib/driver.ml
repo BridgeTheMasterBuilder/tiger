@@ -61,6 +61,19 @@ let run filename output_assembly =
               RegAlloc.alloc frame body Frame.calleesaves
             in
             print_insns insns allocation
+            (* Hashtbl.iter *)
+            (*   (fun insn live_set -> *)
+            (*     Printf.printf "%s\n" *)
+            (*       (Assem.format *)
+            (*          (Frame.map_temp allocation) *)
+            (*          (FGraph.Flowgraph.V.label insn)); *)
+            (*     Liveness.LiveSet.iter *)
+            (*       (fun t -> *)
+            (*         if Hashtbl.find Temp.pointer_map t then *)
+            (*           Printf.printf "%s contains a pointer\n" *)
+            (*             (Frame.map_temp allocation t)) *)
+            (*       live_set) *)
+            (*   live_map *)
         | Frame.String (lab, s) ->
             string_literals := (lab, s) :: !string_literals)
       fragments;

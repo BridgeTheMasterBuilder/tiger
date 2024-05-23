@@ -59,6 +59,7 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
                     in
                     move @ [ insn ]
                 | Some temp ->
+                    (* TODO May be pointer, note in frame *)
                     let insn = update_references t temp insn in
                     let move =
                       Tree.(Move (local, Temp temp)) |> Codegen.codegen
