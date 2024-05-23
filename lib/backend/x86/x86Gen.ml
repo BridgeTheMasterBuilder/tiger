@@ -57,7 +57,6 @@ let codegen stm =
          { assem = "j" ^ cc ^ " `j0"; dst = []; src = []; jump = Some [ t; f ] })
   in
   let result gen =
-    (* TODO May be pointer *)
     let t = Temp.newtemp () in
     gen t;
     t
@@ -73,6 +72,9 @@ let codegen stm =
         let e2, s2, _ = munch_effective_address next_index rhs in
         emit
           (A.Move { assem = "lea " ^ s1 ^ ", [" ^ s2 ^ "]"; src = e2; dst = e1 })
+    | T.Move (T.Temp t1, T.Temp t2) ->
+        Hashtbl.replace Temp.pointer_map t1 (Hashtbl.find Temp.pointer_map t2);
+        emit (A.Move { assem = "mov `d0, `s0"; src = [ t2 ]; dst = [ t1 ] })
     | T.Move (lhs, rhs) ->
         let e1, s1, next_index = munch_lhs false 0 lhs in
         let e2, s2 = munch_rhs next_index rhs in
@@ -97,7 +99,6 @@ let codegen stm =
     | T.(Binop (Div, lhs, rhs)) ->
         let e1, s1, _ = munch_lhs true 0 lhs in
         let e2, s2, _ = munch_lhs true 0 rhs in
-
         result (fun r ->
             emit
               (A.Move

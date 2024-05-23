@@ -205,31 +205,23 @@ let color_graph
       (fun n ->
         (* TODO separate the precolored nodes so they are never even considered *)
         if not (Hashtbl.mem color n) then (
-          (* print_endline ("coloring:" ^ Temp.make_string n); *)
-          (* print_string "available colors: "; *)
           let ok_colors = ref registers in
-          (* Colors.iter (fun reg -> print_string (reg ^ " ")) !ok_colors; *)
-          (* print_endline "has neighbors:"; *)
           List.iter
             (fun w ->
-              (* print_string (Temp.make_string w ^ "("); *)
               if Hashtbl.mem color (get_alias w) then
-                (* print_string (Hashtbl.find color (get_alias w)); *)
                 ColorsRef.remove (Hashtbl.find color (get_alias w)) ok_colors)
-            (* print_string ") ") *)
-            (* (IGraph.succ igraph n @ IGraph.pred igraph n); *)
             (IGraph.succ igraph n);
-          (* print_newline (); *)
           if ColorsRef.is_empty ok_colors then
-            (* print_endline "need to spill it"; *)
             TemporarySetRef.add n spilled_nodes
           else
             let c = ColorsRef.choose ok_colors in
-            (* print_endline ("assigning color " ^ c); *)
             Hashtbl.replace color n c))
       !select_stack;
     TemporarySet.iter
-      (fun n -> Hashtbl.replace color n (Hashtbl.find color (get_alias n)))
+      (fun n ->
+        (* TODO bandaid? *)
+        if Hashtbl.mem color (get_alias n) then
+          Hashtbl.replace color n (Hashtbl.find color (get_alias n)))
       !coalesced_nodes
   in
   let add_worklist u =
