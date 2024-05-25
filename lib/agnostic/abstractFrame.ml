@@ -34,4 +34,5 @@ module type AbstractFrame = sig
   val print_frame : t -> unit
   val map_temp : (Temp.t, register) Hashtbl.t -> Temp.t -> register
   val frame_resident : access -> bool
+  val pointer_map : t -> (access, bool) Hashtbl.t
 end

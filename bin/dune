@@ -4,5 +4,5 @@
  (modules main)
  (libraries tigerc_lib cmdliner))
 
-(cram
- (deps %{bin:tigerc}))
+; (cram
+;  (deps %{bin:tigerc}))

@@ -10,7 +10,8 @@ type allocation = Frame.register Temp.table
 module IntSet = Set.Make (Int)
 
 let update_references temp reg = function
-  | Assem.Move { assem; src; dst; _ } ->
+  | Assem.Move { assem; src; dst; _ }
+  | Assem.Call { assem; src; dst; _ } (* TODO ? *) ->
       let src = List.map (fun t -> if Temp.equal temp t then reg else t) src in
       let dst = List.map (fun t -> if Temp.equal temp t then reg else t) dst in
       Assem.Move { assem; src; dst }
@@ -40,18 +41,41 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
               let fetch, temp =
                 (* TODO May be pointer, note in frame *)
                 let temp = Temp.newtemp () in
-                let move = Tree.(Move (Temp temp, local)) |> Codegen.codegen in
+                (* let move = Tree.(Move (Temp temp, local)) |> Codegen.codegen in *)
+                let move1 =
+                  Tree.(Move (Temp t, Frame.exp (Tree.Temp Frame.fp) local))
+                  |> Codegen.codegen
+                in
+                let move2 =
+                  Tree.(Move (Temp temp, Temp t)) |> Codegen.codegen
+                in
                 let insn = update_references t temp insn in
-                (insn :: move, temp)
+                Hashtbl.replace Temp.pointer_map temp
+                  (Hashtbl.find Temp.pointer_map t);
+                (* (insn :: move, temp) *)
+                ((insn :: move2) @ move1, temp)
               in
-              let store = Tree.(Move (local, Temp temp)) |> Codegen.codegen in
+              let store =
+                Tree.(Move (Frame.exp (Tree.Temp Frame.fp) local, Temp temp))
+                |> Codegen.codegen
+              in
+              Hashtbl.replace (Frame.pointer_map frame) local
+                (Hashtbl.find Temp.pointer_map temp);
               (store @ fetch, None)
           | true, false ->
               (* TODO May be pointer, note in frame *)
               let temp = Temp.newtemp () in
-              let move = Tree.(Move (Temp temp, local)) |> Codegen.codegen in
+              (* let move = Tree.(Move (Temp temp, local)) |> Codegen.codegen in *)
+              let move1 =
+                Tree.(Move (Temp t, Frame.exp (Tree.Temp Frame.fp) local))
+                |> Codegen.codegen
+              in
+              let move2 = Tree.(Move (Temp temp, Temp t)) |> Codegen.codegen in
               let insn = update_references t temp insn in
-              (insn :: move, Some temp)
+              Hashtbl.replace Temp.pointer_map temp
+                (Hashtbl.find Temp.pointer_map t);
+              (* (insn :: move, Some temp) *)
+              ((insn :: move2) @ move1, Some temp)
           | false, true ->
               let fetch =
                 match saved_temp with
@@ -59,17 +83,43 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
                     (* TODO May be pointer, note in frame *)
                     let temp = Temp.newtemp () in
                     let insn = update_references t temp insn in
-                    let move =
-                      Tree.(Move (local, Temp temp)) |> Codegen.codegen
+                    (* let move = *)
+                    (*   Tree.(Move (local, Temp temp)) |> Codegen.codegen *)
+                    (* in *)
+                    let move1 =
+                      Tree.(Move (Temp temp, Temp t)) |> Codegen.codegen
                     in
-                    move @ [ insn ]
+                    let move2 =
+                      Tree.(
+                        Move (Frame.exp (Tree.Temp Frame.fp) local, Temp temp))
+                      |> Codegen.codegen
+                    in
+                    Hashtbl.replace Temp.pointer_map temp
+                      (Hashtbl.find Temp.pointer_map t);
+                    Hashtbl.replace (Frame.pointer_map frame) local
+                      (Hashtbl.find Temp.pointer_map temp);
+                    (* move @ [ insn ] *)
+                    move1 @ move2 @ [ insn ]
                 | Some temp ->
                     (* TODO May be pointer, note in frame *)
                     let insn = update_references t temp insn in
                     let move =
-                      Tree.(Move (local, Temp temp)) |> Codegen.codegen
+                      Tree.(
+                        Move (Frame.exp (Tree.Temp Frame.fp) local, Temp temp))
+                      |> Codegen.codegen
                     in
+                    Hashtbl.replace (Frame.pointer_map frame) local
+                      (Hashtbl.find Temp.pointer_map temp);
+                    (* let move1 = *)
+                    (*   Tree.(Move (Temp temp, Temp t)) |> Codegen.codegen *)
+                    (* in *)
+                    (* let move2 = *)
+                    (*   Tree.(Move (local, Temp temp)) |> Codegen.codegen *)
+                    (* in *)
+                    (* Hashtbl.replace Temp.pointer_map temp *)
+                    (*   (Hashtbl.find Temp.pointer_map t); *)
                     move @ [ insn ]
+                (* move1 @ move2 @ [ insn ] *)
               in
               (fetch, None)
           | false, false -> ([ insn ], saved_temp)
@@ -98,7 +148,8 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
       (({ prologue; body; epilogue; sink = rewritten_sink } : Frame.body), regs)
   | [] ->
       let local =
-        Frame.alloc_local frame true |> Frame.exp (Tree.Temp Frame.fp)
+        (* Frame.alloc_local frame true |> Frame.exp (Tree.Temp Frame.fp) *)
+        Frame.alloc_local frame true
       in
       aux 0 local body prologue [] epilogue sink None
 

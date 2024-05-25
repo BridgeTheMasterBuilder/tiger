@@ -18,6 +18,7 @@ type t = {
   label : Temp.label;
   body : body;
   mutable saved_registers : Temp.t list;
+  pointer_map : (access, bool) Hashtbl.t;
 }
 
 type frag =
@@ -177,6 +178,7 @@ let new_frame label escapes =
               };
         };
       saved_registers = [];
+      pointer_map = Hashtbl.create 10;
     }
   in
   frame
@@ -255,3 +257,4 @@ let proc_entry_exit frame body =
   { prologue; body; epilogue; sink }
 
 let frame_resident = function InFrame _ -> true | InReg _ -> false
+let pointer_map { pointer_map; _ } = pointer_map

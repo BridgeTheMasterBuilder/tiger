@@ -1,0 +1,5 @@
+; (test
+;  (name tigerc))
+
+(cram
+ (deps %{bin:tigerc} ../programs/merge.tig ../programs/queens.tig ../runtime/runtime.o))

@@ -23,6 +23,7 @@ let run filename output_assembly =
     in
     let base_filename = Filename.remove_extension output_filename in
     let object_file = base_filename ^ ".o" in
+    let runtime_dir = Sys.getenv "TIGERC_RUNTIME_DIR" in
     Symbol.iter
       (fun k _ -> Printf.fprintf output_channel "extern %s\n" (Symbol.name k))
       Env.base_venv;
@@ -58,22 +59,28 @@ let run filename output_assembly =
             in
             let body = Frame.proc_entry_exit frame insns in
             let insns, allocation, live_map =
-              RegAlloc.alloc frame body Frame.calleesaves
+              (* RegAlloc.alloc frame body Frame.calleesaves *)
+              RegAlloc.alloc frame body []
             in
-            print_insns insns allocation
-            (* Hashtbl.iter *)
-            (*   (fun insn live_set -> *)
-            (*     Printf.printf "%s\n" *)
-            (*       (Assem.format *)
-            (*          (Frame.map_temp allocation) *)
-            (*          (FGraph.Flowgraph.V.label insn)); *)
-            (*     Liveness.LiveSet.iter *)
-            (*       (fun t -> *)
-            (*         if Hashtbl.find Temp.pointer_map t then *)
-            (*           Printf.printf "%s contains a pointer\n" *)
-            (*             (Frame.map_temp allocation t)) *)
-            (*       live_set) *)
-            (*   live_map *)
+            print_insns insns allocation;
+            Printf.printf "%s:\n" (Symbol.name (Frame.name frame));
+            Hashtbl.iter
+              (fun insn live_set ->
+                (* Printf.printf "%s\n" *)
+                (*   (Assem.format *)
+                (*      (Frame.map_temp allocation) *)
+                (*      (FGraph.Flowgraph.V.label insn)); *)
+                Liveness.LiveSet.iter
+                  (fun t ->
+                    if Hashtbl.find Temp.pointer_map t then
+                      Printf.printf "%s contains a pointer\n"
+                        (Frame.map_temp allocation t))
+                  live_set)
+              live_map;
+            Hashtbl.iter
+              (fun local b ->
+                if b then Printf.printf "Frame variable contains a pointer\n")
+              (Frame.pointer_map frame)
         | Frame.String (lab, s) ->
             string_literals := (lab, s) :: !string_literals)
       fragments;
@@ -97,8 +104,8 @@ let run filename output_assembly =
         Sys.command
           (Printf.sprintf
              "gcc -no-pie -Wl,--no-warn-execstack -Wl,--wrap=getchar \
-              runtime/runtime.o %s"
-             object_file)
+              %s/runtime.o %s"
+             runtime_dir object_file)
         <> 0
       then ErrorMsg.impossible "Linking phase failed.")
     else ErrorMsg.impossible "Compiler emitted invalid assembly code.";
