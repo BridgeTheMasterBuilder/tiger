@@ -32,7 +32,15 @@ let run filename output_assembly =
     Printf.fprintf output_channel "extern str_cmp\n\n";
     Printf.fprintf output_channel "global tigermain\n\n";
     let string_literals = ref [] in
+    let last_ptrmap_entry = ref (Temp.named_label "ptrmap") in
     Printf.fprintf output_channel "section .text\n";
+    let ptrmap =
+      ref
+        [
+          Printf.sprintf "%s:\ndq 0\ndq 0\ndb 0\n"
+            (Symbol.name !last_ptrmap_entry);
+        ]
+    in
     List.iter
       (function
         | Frame.Proc { body; frame } ->
@@ -61,23 +69,38 @@ let run filename output_assembly =
                   (* Also need to pretty print frame variables check, kind of *)
                   | Assem.Call { ret; _ } as insn ->
                       (* Printf.printf "%s:\n" (Symbol.name (Frame.name frame)); *)
-                      Printf.printf "Pointer map entry for %s:\n"
-                        (Symbol.name ret);
-                      Liveness.LiveSet.iter
-                        (fun t ->
-                          if Hashtbl.find Temp.pointer_map t then
-                            Printf.printf "%s contains a pointer\n"
-                              (Frame.map_temp allocation t))
-                        (Hashtbl.find_opt live_map node
-                        |> Option.get_or ~default:Liveness.LiveSet.empty);
-                      Hashtbl.iter
-                        (fun local b ->
-                          if b then
-                            Printf.printf "%s contains a pointer\n"
-                              (Frame.string_of_local allocation local))
-                        (Frame.pointer_map frame);
-                      let s = Assem.format (Frame.map_temp allocation) insn in
-                      Printf.fprintf output_channel "%s\n" s
+                      let open Iter in
+                      let reg_iter =
+                        Liveness.LiveSet.to_iter
+                          (Hashtbl.find_opt live_map node
+                          |> Option.get_or ~default:Liveness.LiveSet.empty)
+                        |> filter (Hashtbl.find Temp.pointer_map)
+                        |> map (Frame.map_temp allocation)
+                      in
+                      let frame_iter =
+                        Hashtbl.to_iter (Frame.pointer_map frame)
+                        |> filter (fun (_, b) -> b)
+                        |> map (fun (local, _) ->
+                               Frame.string_of_local allocation local)
+                      in
+                      let ptrs = append reg_iter frame_iter |> to_list in
+                      let n = List.length ptrs in
+                      if n > 0 then (
+                        let ptrmap_entry = Temp.named_label "ptrmap" in
+                        let s =
+                          Printf.sprintf "%s:\ndq %s\ndq %s\ndb %d\n%s"
+                            (Symbol.name ptrmap_entry)
+                            (Symbol.name !last_ptrmap_entry)
+                            (Symbol.name ret) n
+                            (List.fold_left
+                               (fun s p -> Printf.sprintf "db \"%s\"\n" p ^ s)
+                               "" ptrs)
+                        in
+                        ptrmap := s :: !ptrmap;
+                        last_ptrmap_entry := ptrmap_entry;
+                        (* List.iter (Printf.printf "db \"%s\"\n") ptrs; *)
+                        let s = Assem.format (Frame.map_temp allocation) insn in
+                        Printf.fprintf output_channel "%s\n" s)
                   | insn ->
                       let s = Assem.format (Frame.map_temp allocation) insn in
                       if not (String.equal s "") then
@@ -122,6 +145,8 @@ let run filename output_assembly =
         let s = Str.global_replace (Str.regexp "\n\"") "\", 0xA" s in
         Printf.fprintf output_channel "%s: db %s, 0\n" (Symbol.name lab) s)
       !string_literals;
+    Printf.fprintf output_channel "ptrmap_root:\n";
+    List.iter (Printf.fprintf output_channel "%s") !ptrmap;
     flush output_channel;
     if output_assembly then ()
     else if
