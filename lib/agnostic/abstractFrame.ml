@@ -35,4 +35,5 @@ module type AbstractFrame = sig
   val map_temp : (Temp.t, register) Hashtbl.t -> Temp.t -> register
   val frame_resident : access -> bool
   val pointer_map : t -> (access, bool) Hashtbl.t
+  val string_of_local : (Temp.t, register) Hashtbl.t -> access -> string
 end

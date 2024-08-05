@@ -14,7 +14,12 @@ type insn =
     }
   | Label of { assem : string; lab : Temp.label }
   | Move of { assem : string; dst : temp list; src : temp list }
-  | Call of { assem : string; dst : temp list; src : temp list }
+  | Call of {
+      assem : string;
+      dst : temp list;
+      src : temp list;
+      ret : Temp.label;
+    }
 
 let format saytemp insn =
   let speak (assem, dst, src, jump) =
@@ -39,4 +44,4 @@ let format saytemp insn =
   | Oper { assem; dst; src; jump = Some j } -> speak (assem, dst, src, j)
   | Label { assem; _ } -> assem
   | Move { assem; dst; src } -> speak (assem, dst, src, [])
-  | Call { assem; dst; src } -> speak (assem, dst, src, [])
+  | Call { assem; dst; src; _ } -> speak (assem, dst, src, [])

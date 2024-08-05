@@ -210,4 +210,5 @@ let rec alloc frame procedure_body available_regs =
             ~key:m nodes)
         coalesced_moves nodes
     in
-    (List.map FGraph.Flowgraph.V.label nodes, allocation, interference.live_map)
+    (* (List.map FGraph.Flowgraph.V.label nodes, allocation, interference.live_map) *)
+    (nodes, allocation, interference.live_map)

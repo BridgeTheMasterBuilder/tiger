@@ -40,9 +40,10 @@ let run filename output_assembly =
             let blocks = Canon.basic_blocks stms in
             let trace = Canon.trace_schedule blocks in
             let insns = List.map Codegen.codegen trace |> List.flatten in
-            let print_insns insns allocation =
+            let print_insns insns allocation live_map =
               List.iter
-                (function
+                (fun node ->
+                  match FGraph.Flowgraph.V.label node with
                   | Assem.Move { assem; dst = [ dst ]; src = [ src ]; _ }
                     when (not (String.contains assem '['))
                          (* TODO this isn't portable, maybe add a predicate to Assem *)
@@ -51,6 +52,32 @@ let run filename output_assembly =
                               (Hashtbl.find allocation src) ->
                       (* Ignore self-moves *)
                       ()
+                  (* TODO add return label to Assem.Call, check *)
+                  (* take in live_map param to this function check *)
+                  (* and then if this instruction is a call instruction check *)
+                  (* create a pointer map entry keyed by the return label and which contains *)
+                  (* the live registers and frame locations for this call *)
+                  (* in some format *)
+                  (* Also need to pretty print frame variables check, kind of *)
+                  | Assem.Call { ret; _ } as insn ->
+                      (* Printf.printf "%s:\n" (Symbol.name (Frame.name frame)); *)
+                      Printf.printf "Pointer map entry for %s:\n"
+                        (Symbol.name ret);
+                      Liveness.LiveSet.iter
+                        (fun t ->
+                          if Hashtbl.find Temp.pointer_map t then
+                            Printf.printf "%s contains a pointer\n"
+                              (Frame.map_temp allocation t))
+                        (Hashtbl.find_opt live_map node
+                        |> Option.get_or ~default:Liveness.LiveSet.empty);
+                      Hashtbl.iter
+                        (fun local b ->
+                          if b then
+                            Printf.printf "%s contains a pointer\n"
+                              (Frame.string_of_local allocation local))
+                        (Frame.pointer_map frame);
+                      let s = Assem.format (Frame.map_temp allocation) insn in
+                      Printf.fprintf output_channel "%s\n" s
                   | insn ->
                       let s = Assem.format (Frame.map_temp allocation) insn in
                       if not (String.equal s "") then
@@ -62,25 +89,25 @@ let run filename output_assembly =
               (* RegAlloc.alloc frame body Frame.calleesaves *)
               RegAlloc.alloc frame body []
             in
-            print_insns insns allocation;
-            Printf.printf "%s:\n" (Symbol.name (Frame.name frame));
-            Hashtbl.iter
-              (fun insn live_set ->
-                (* Printf.printf "%s\n" *)
-                (*   (Assem.format *)
-                (*      (Frame.map_temp allocation) *)
-                (*      (FGraph.Flowgraph.V.label insn)); *)
-                Liveness.LiveSet.iter
-                  (fun t ->
-                    if Hashtbl.find Temp.pointer_map t then
-                      Printf.printf "%s contains a pointer\n"
-                        (Frame.map_temp allocation t))
-                  live_set)
-              live_map;
-            Hashtbl.iter
-              (fun local b ->
-                if b then Printf.printf "Frame variable contains a pointer\n")
-              (Frame.pointer_map frame)
+            print_insns insns allocation live_map
+            (* Printf.printf "%s:\n" (Symbol.name (Frame.name frame)); *)
+            (* Hashtbl.iter *)
+            (*   (fun insn live_set -> *)
+            (*     (\* Printf.printf "%s\n" *\) *)
+            (*     (\*   (Assem.format *\) *)
+            (*     (\*      (Frame.map_temp allocation) *\) *)
+            (*     (\*      (FGraph.Flowgraph.V.label insn)); *\) *)
+            (*     Liveness.LiveSet.iter *)
+            (*       (fun t -> *)
+            (*         if Hashtbl.find Temp.pointer_map t then *)
+            (*           Printf.printf "%s contains a pointer\n" *)
+            (*             (Frame.map_temp allocation t)) *)
+            (*       live_set) *)
+            (*   live_map; *)
+            (* Hashtbl.iter *)
+            (*   (fun local b -> *)
+            (*     if b then Printf.printf "Frame variable contains a pointer\n") *)
+            (*   (Frame.pointer_map frame) *)
         | Frame.String (lab, s) ->
             string_literals := (lab, s) :: !string_literals)
       fragments;

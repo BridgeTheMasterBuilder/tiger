@@ -129,6 +129,7 @@ let codegen stm =
         result (fun r -> emit_binop r op e1 s1 e2 s2)
     | T.Call (T.Name f, args) ->
         result (fun r ->
+            let ret = Temp.named_label "ret" in
             emit
               (* (A.Oper *)
               (*    { *)
@@ -142,7 +143,9 @@ let codegen stm =
                    assem = "call " ^ Symbol.name f;
                    src = munch_args 0 args;
                    dst = X86Frame.calldefs;
+                   ret;
                  });
+            emit (A.Label { assem = Symbol.name ret ^ ":"; lab = ret });
             emit
               (A.Move
                  { assem = "mov `d0, `s0"; src = [ X86Frame.rv ]; dst = [ r ] }))
