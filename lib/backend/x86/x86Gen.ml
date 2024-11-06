@@ -74,6 +74,7 @@ let codegen stm =
           (A.Move { assem = "lea " ^ s1 ^ ", [" ^ s2 ^ "]"; src = e2; dst = e1 })
     | T.Move (T.Temp t1, T.Temp t2) ->
         Hashtbl.replace Temp.pointer_map t1 (Hashtbl.find Temp.pointer_map t2);
+        Printf.printf "%s <- %s\n" (Temp.make_string t1) (Temp.make_string t2);
         emit (A.Move { assem = "mov `d0, `s0"; src = [ t2 ]; dst = [ t1 ] })
     | T.Move (lhs, rhs) ->
         let e1, s1, next_index = munch_lhs false 0 lhs in

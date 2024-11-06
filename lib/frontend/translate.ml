@@ -96,6 +96,7 @@ let external_call f args allocates =
   let args = List.map un_ex args in
   let t = Temp.newtemp () in
   Hashtbl.replace Temp.pointer_map t allocates;
+  Printf.printf "Does %s allocate? %b -> %s\n" f allocates (Temp.make_string t);
   (* Ex (Frame.external_call f args) *)
   Ex T.(Eseq (Move (Temp t, Frame.external_call f args), Temp t))
 
@@ -175,14 +176,9 @@ let record_exp exps descr =
             (Mem (Binop (Plus, Temp r, Const ((i + 1) * Frame.word_size))), exp)))
       exps
   in
-  let descr = un_ex descr in
-  Ex
-    T.(
-      Eseq
-        ( Seq
-            ( Move (Temp r, Frame.external_call "alloc_record" [ descr ]),
-              seq exps ),
-          Temp r ))
+  let allocation = un_ex (external_call "alloc_record" [ descr ] true) in
+  Printf.printf "%s <-\n" (Temp.make_string r);
+  Ex T.(Eseq (Seq (Move (Temp r, allocation), seq exps), Temp r))
 
 let seq_exp = function
   | [] -> Ex (T.Const 0)
@@ -257,17 +253,14 @@ let let_exp decs body =
 let array_exp length init elt_is_pointer =
   let a = Temp.newtemp () in
   Hashtbl.replace Temp.pointer_map a true;
-  let length = un_ex length in
-  let init = un_ex init in
-  let elt_is_pointer = un_ex elt_is_pointer in
-  Ex
-    T.(
-      Eseq
-        ( Move
-            ( Temp a,
-              Frame.external_call "init_array" [ length; init; elt_is_pointer ]
-            ),
-          Temp a ))
+  let length = length in
+  let init = init in
+  let elt_is_pointer = elt_is_pointer in
+  let allocation =
+    un_ex (external_call "init_array" [ length; init; elt_is_pointer ] true)
+  in
+  Printf.printf "%s <-\n" (Temp.make_string a);
+  Ex T.(Eseq (Move (Temp a, allocation), Temp a))
 
 let varDec var exp =
   let var = un_ex var in

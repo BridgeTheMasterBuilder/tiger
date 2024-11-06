@@ -30,6 +30,7 @@ let run filename output_assembly =
     Printf.fprintf output_channel "extern init_array\n";
     Printf.fprintf output_channel "extern alloc_record\n";
     Printf.fprintf output_channel "extern str_cmp\n\n";
+    Printf.fprintf output_channel "global ptrmap_root\n\n";
     Printf.fprintf output_channel "global tigermain\n\n";
     let string_literals = ref [] in
     let last_ptrmap_entry = ref (Temp.named_label "ptrmap") in
@@ -68,8 +69,25 @@ let run filename output_assembly =
                   (* in some format *)
                   (* Also need to pretty print frame variables check, kind of *)
                   | Assem.Call { ret; _ } as insn ->
-                      (* Printf.printf "%s:\n" (Symbol.name (Frame.name frame)); *)
+                      (* Printf.printf "Checking %s - %s - %s:\n" *)
+                      (*   (Symbol.name (Frame.name frame)) *)
+                      (*   (Symbol.name ret) *)
+                      (*   (Assem.format (Frame.map_temp allocation) insn); *)
                       let open Iter in
+                      (* Liveness.LiveSet.to_iter *)
+                      (*   (Hashtbl.find_opt live_map node *)
+                      (*   |> Option.get_or ~default:Liveness.LiveSet.empty) *)
+                      (* |> map (fun b -> (Frame.map_temp allocation b, b)) *)
+                      (* |> iter (fun (s, b) -> *)
+                      (*        Printf.printf "%s(%s) - %b\n" s *)
+                      (*          (Temp.make_string b) *)
+                      (*          (Hashtbl.find Temp.pointer_map b)); *)
+                      (* Hashtbl.to_iter (Frame.pointer_map frame) *)
+                      (* |> map (fun (local, b) -> *)
+                      (*        (Frame.string_of_local allocation local, b)) *)
+                      (* |> iter (fun (s, b) -> *)
+                      (*        Printf.printf "%s(?) - %b\n" s *)
+                      (*          (\* (Temp.make_string b) *\) b); *)
                       let reg_iter =
                         Liveness.LiveSet.to_iter
                           (Hashtbl.find_opt live_map node
@@ -87,6 +105,7 @@ let run filename output_assembly =
                       let n = List.length ptrs in
                       if n > 0 then (
                         let ptrmap_entry = Temp.named_label "ptrmap" in
+                        Printf.printf "OK %s\n" (Symbol.name ptrmap_entry);
                         let s =
                           Printf.sprintf "%s:\ndq %s\ndq %s\ndb %d\n%s"
                             (Symbol.name ptrmap_entry)
@@ -97,10 +116,10 @@ let run filename output_assembly =
                                "" ptrs)
                         in
                         ptrmap := s :: !ptrmap;
-                        last_ptrmap_entry := ptrmap_entry;
-                        (* List.iter (Printf.printf "db \"%s\"\n") ptrs; *)
-                        let s = Assem.format (Frame.map_temp allocation) insn in
-                        Printf.fprintf output_channel "%s\n" s)
+                        last_ptrmap_entry := ptrmap_entry);
+                      (* List.iter (Printf.printf "db \"%s\"\n") ptrs; *)
+                      let s = Assem.format (Frame.map_temp allocation) insn in
+                      Printf.fprintf output_channel "%s\n" s
                   | insn ->
                       let s = Assem.format (Frame.map_temp allocation) insn in
                       if not (String.equal s "") then
@@ -109,8 +128,8 @@ let run filename output_assembly =
             in
             let body = Frame.proc_entry_exit frame insns in
             let insns, allocation, live_map =
-              (* RegAlloc.alloc frame body Frame.calleesaves *)
-              RegAlloc.alloc frame body []
+              RegAlloc.alloc frame body Frame.calleesaves
+              (* RegAlloc.alloc frame body [] *)
             in
             print_insns insns allocation live_map
             (* Printf.printf "%s:\n" (Symbol.name (Frame.name frame)); *)
