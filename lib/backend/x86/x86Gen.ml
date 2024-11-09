@@ -73,6 +73,7 @@ let codegen stm =
         emit
           (A.Move { assem = "lea " ^ s1 ^ ", [" ^ s2 ^ "]"; src = e2; dst = e1 })
     | T.Move (T.Temp t1, T.Temp t2) ->
+        (* TODO move this to handle_moves in driver.ml *)
         Hashtbl.replace Temp.pointer_map t1 (Hashtbl.find Temp.pointer_map t2);
         Printf.printf "%s <- %s\n" (Temp.make_string t1) (Temp.make_string t2);
         emit (A.Move { assem = "mov `d0, `s0"; src = [ t2 ]; dst = [ t1 ] })

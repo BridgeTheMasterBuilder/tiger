@@ -95,6 +95,7 @@ let string_exp s =
 let external_call f args allocates =
   let args = List.map un_ex args in
   let t = Temp.newtemp () in
+  (* TODO might not return ptr *)
   Hashtbl.replace Temp.pointer_map t allocates;
   Printf.printf "Does %s allocate? %b -> %s\n" f allocates (Temp.make_string t);
   (* Ex (Frame.external_call f args) *)

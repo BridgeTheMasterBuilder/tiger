@@ -59,6 +59,8 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
                 Tree.(Move (Frame.exp (Tree.Temp Frame.fp) local, Temp temp))
                 |> Codegen.codegen
               in
+              let s = Assem.format Temp.make_string insn in
+              Printf.printf "Spill: %s\n" s;
               Hashtbl.replace (Frame.pointer_map frame) local
                 (Hashtbl.find Temp.pointer_map temp);
               (store @ fetch, None)
@@ -72,6 +74,8 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
               in
               let move2 = Tree.(Move (Temp temp, Temp t)) |> Codegen.codegen in
               let insn = update_references t temp insn in
+              let s = Assem.format Temp.make_string insn in
+              Printf.printf "Spill: %s\n" s;
               Hashtbl.replace Temp.pointer_map temp
                 (Hashtbl.find Temp.pointer_map t);
               (* (insn :: move, Some temp) *)
@@ -98,6 +102,8 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
                       (Hashtbl.find Temp.pointer_map t);
                     Hashtbl.replace (Frame.pointer_map frame) local
                       (Hashtbl.find Temp.pointer_map temp);
+                    let s = Assem.format Temp.make_string insn in
+                    Printf.printf "Spill: %s\n" s;
                     (* move @ [ insn ] *)
                     move1 @ move2 @ [ insn ]
                 | Some temp ->
@@ -108,6 +114,8 @@ let spill_temporary t frame ({ prologue; body; epilogue; sink } : Frame.body)
                         Move (Frame.exp (Tree.Temp Frame.fp) local, Temp temp))
                       |> Codegen.codegen
                     in
+                    let s = Assem.format Temp.make_string insn in
+                    Printf.printf "Spill: %s\n" s;
                     Hashtbl.replace (Frame.pointer_map frame) local
                       (Hashtbl.find Temp.pointer_map temp);
                     (* let move1 = *)

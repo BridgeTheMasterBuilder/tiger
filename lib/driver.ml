@@ -42,6 +42,21 @@ let run filename output_assembly =
             (Symbol.name !last_ptrmap_entry);
         ]
     in
+    let handle_moves insns allocation frame =
+      List.filter
+        (fun node ->
+          match FGraph.Flowgraph.V.label node with
+          | Assem.Move { assem; dst = [ dst ]; src = [ src ]; _ }
+            when (not (String.contains assem '['))
+                 (* TODO this isn't portable, maybe add a predicate to Assem *)
+                 && String.equal
+                      (Hashtbl.find allocation dst)
+                      (Hashtbl.find allocation src) ->
+              (* Ignore self-moves *)
+              false
+          | _ -> true)
+        insns
+    in
     List.iter
       (function
         | Frame.Proc { body; frame } ->
@@ -53,14 +68,14 @@ let run filename output_assembly =
               List.iter
                 (fun node ->
                   match FGraph.Flowgraph.V.label node with
-                  | Assem.Move { assem; dst = [ dst ]; src = [ src ]; _ }
-                    when (not (String.contains assem '['))
-                         (* TODO this isn't portable, maybe add a predicate to Assem *)
-                         && String.equal
-                              (Hashtbl.find allocation dst)
-                              (Hashtbl.find allocation src) ->
-                      (* Ignore self-moves *)
-                      ()
+                  (* | Assem.Move { assem; dst = [ dst ]; src = [ src ]; _ } *)
+                  (*   when (not (String.contains assem '[')) *)
+                  (*        (\* TODO this isn't portable, maybe add a predicate to Assem *\) *)
+                  (*        && String.equal *)
+                  (*             (Hashtbl.find allocation dst) *)
+                  (*             (Hashtbl.find allocation src) -> *)
+                  (*     (\* Ignore self-moves *\) *)
+                  (*     () *)
                   (* TODO add return label to Assem.Call, check *)
                   (* take in live_map param to this function check *)
                   (* and then if this instruction is a call instruction check *)
@@ -94,6 +109,7 @@ let run filename output_assembly =
                           |> Option.get_or ~default:Liveness.LiveSet.empty)
                         |> filter (Hashtbl.find Temp.pointer_map)
                         |> map (Frame.map_temp allocation)
+                        (* |> map Temp.make_string *)
                       in
                       let frame_iter =
                         Hashtbl.to_iter (Frame.pointer_map frame)
@@ -119,9 +135,11 @@ let run filename output_assembly =
                         last_ptrmap_entry := ptrmap_entry);
                       (* List.iter (Printf.printf "db \"%s\"\n") ptrs; *)
                       let s = Assem.format (Frame.map_temp allocation) insn in
+                      (* let s = Assem.format Temp.make_string insn in *)
                       Printf.fprintf output_channel "%s\n" s
                   | insn ->
                       let s = Assem.format (Frame.map_temp allocation) insn in
+                      (* let s = Assem.format Temp.make_string insn in *)
                       if not (String.equal s "") then
                         Printf.fprintf output_channel "%s\n" s)
                 insns
@@ -131,6 +149,7 @@ let run filename output_assembly =
               RegAlloc.alloc frame body Frame.calleesaves
               (* RegAlloc.alloc frame body [] *)
             in
+            let insns = handle_moves insns allocation frame in
             print_insns insns allocation live_map
             (* Printf.printf "%s:\n" (Symbol.name (Frame.name frame)); *)
             (* Hashtbl.iter *)

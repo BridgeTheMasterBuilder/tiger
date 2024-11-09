@@ -262,3 +262,4 @@ let pointer_map { pointer_map; _ } = pointer_map
 let string_of_local allocation = function
   | InFrame k -> "f" ^ string_of_int (-(k / 8))
   | InReg r -> map_temp allocation r
+(* | InReg r -> Temp.make_string r *)
