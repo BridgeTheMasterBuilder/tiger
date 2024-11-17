@@ -42,21 +42,21 @@ let run filename output_assembly =
             (Symbol.name !last_ptrmap_entry);
         ]
     in
-    let handle_moves insns allocation frame =
-      List.filter
-        (fun node ->
-          match FGraph.Flowgraph.V.label node with
-          | Assem.Move { assem; dst = [ dst ]; src = [ src ]; _ }
-            when (not (String.contains assem '['))
-                 (* TODO this isn't portable, maybe add a predicate to Assem *)
-                 && String.equal
-                      (Hashtbl.find allocation dst)
-                      (Hashtbl.find allocation src) ->
-              (* Ignore self-moves *)
-              false
-          | _ -> true)
-        insns
-    in
+    (* let handle_moves insns allocation frame = *)
+    (*   List.filter *)
+    (*     (fun node -> *)
+    (*       match FGraph.Flowgraph.V.label node with *)
+    (*       | Assem.Move { assem; dst = [ dst ]; src = [ src ]; _ } *)
+    (*         when (not (String.contains assem '[')) *)
+    (*              (\* TODO this isn't portable, maybe add a predicate to Assem *\) *)
+    (*              && String.equal *)
+    (*                   (Hashtbl.find allocation dst) *)
+    (*                   (Hashtbl.find allocation src) -> *)
+    (*           (\* Ignore self-moves *\) *)
+    (*           false *)
+    (*       | _ -> true) *)
+    (*     insns *)
+    (* in *)
     List.iter
       (function
         | Frame.Proc { body; frame } ->
@@ -68,14 +68,14 @@ let run filename output_assembly =
               List.iter
                 (fun node ->
                   match FGraph.Flowgraph.V.label node with
-                  (* | Assem.Move { assem; dst = [ dst ]; src = [ src ]; _ } *)
-                  (*   when (not (String.contains assem '[')) *)
-                  (*        (\* TODO this isn't portable, maybe add a predicate to Assem *\) *)
-                  (*        && String.equal *)
-                  (*             (Hashtbl.find allocation dst) *)
-                  (*             (Hashtbl.find allocation src) -> *)
-                  (*     (\* Ignore self-moves *\) *)
-                  (*     () *)
+                  | Assem.Move { assem; dst = [ dst ]; src = [ src ]; _ }
+                    when (not (String.contains assem '['))
+                         (* TODO this isn't portable, maybe add a predicate to Assem *)
+                         && String.equal
+                              (Hashtbl.find allocation dst)
+                              (Hashtbl.find allocation src) ->
+                      (* Ignore self-moves *)
+                      ()
                   (* TODO add return label to Assem.Call, check *)
                   (* take in live_map param to this function check *)
                   (* and then if this instruction is a call instruction check *)
@@ -111,6 +111,7 @@ let run filename output_assembly =
                         |> map (Frame.map_temp allocation)
                         (* |> map Temp.make_string *)
                       in
+                      (* TODO The frame may contain a pointer but it might not have been allocated yet when this instruction executes *)
                       let frame_iter =
                         Hashtbl.to_iter (Frame.pointer_map frame)
                         |> filter (fun (_, b) -> b)
@@ -149,7 +150,7 @@ let run filename output_assembly =
               RegAlloc.alloc frame body Frame.calleesaves
               (* RegAlloc.alloc frame body [] *)
             in
-            let insns = handle_moves insns allocation frame in
+            (* let insns = handle_moves insns allocation frame in *)
             print_insns insns allocation live_map
             (* Printf.printf "%s:\n" (Symbol.name (Frame.name frame)); *)
             (* Hashtbl.iter *)

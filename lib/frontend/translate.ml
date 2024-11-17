@@ -11,6 +11,14 @@ type exp =
 type level = { parent : level option; frame : Frame.t; id : unit ref }
 type access = level * Frame.access
 
+let string_of_access (_, access) =
+  Frame.string_of_local (Hashtbl.create 0) access
+
+let mark_as_pointer (_, access) { frame; _ } =
+  Hashtbl.replace (Frame.pointer_map frame) access true
+
+let string_of_level { frame; _ } = Frame.name frame |> Symbol.name
+
 let outermost =
   {
     parent = None;
@@ -98,7 +106,6 @@ let external_call f args allocates =
   (* TODO might not return ptr *)
   Hashtbl.replace Temp.pointer_map t allocates;
   Printf.printf "Does %s allocate? %b -> %s\n" f allocates (Temp.make_string t);
-  (* Ex (Frame.external_call f args) *)
   Ex T.(Eseq (Move (Temp t, Frame.external_call f args), Temp t))
 
 let create_static_link_chain use_level dec_level =

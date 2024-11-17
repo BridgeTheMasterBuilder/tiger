@@ -223,6 +223,24 @@ let rec trans_exp venv tenv level break =
     | A.AssignExp { var; exp; pos } ->
         let lvalue = trvar var in
         let exp = trexp break exp in
+        (* TODO refactor *)
+        (* TODO need to check more than simple var? *)
+        let maybe_get_simple_var = function
+          | A.SimpleVar (name, _) -> Some name
+          | _ -> None
+        in
+        (match maybe_get_simple_var var with
+        | Some name when Types.is_pointer exp.ty -> (
+            match lookup_var venv name pos with
+            | Env.VarEntry { access; _ } ->
+                Translate.mark_as_pointer access level;
+                Printf.printf "(%s) Assigning pointer of type %s to %s (%s)\n"
+                  (Translate.string_of_level level)
+                  (Types.string_of_ty exp.ty)
+                  (Symbol.name name)
+                  (Translate.string_of_access access)
+            | _ -> ())
+        | _ -> ());
         if types_inequal tenv lvalue.ty exp.ty pos then
           ErrorMsg.fatal_error pos
             "Assigning value of type %s to a variable of type %s"
@@ -374,9 +392,16 @@ and transDec venv tenv level break = function
             ErrorMsg.fatal_error pos
               "Nil expression not constrained by record type");
       let access = Translate.alloc_local level !escape in
+      (* TODO refactor *)
+      if Types.is_pointer ty then Translate.mark_as_pointer access level;
+      Printf.printf "(%s) Assigning pointer of type %s to %s (%s)\n"
+        (Translate.string_of_level level)
+        (Types.string_of_ty ty) (Symbol.name name)
+        (Translate.string_of_access access);
       let venv' = Symbol.enter venv name (Env.VarEntry { access; ty }) in
       let var = Translate.simple_var access level in
       let exp = Translate.varDec var exp in
+
       (venv', tenv, Some exp)
   | A.TypeDec decs ->
       let declare_header venv tenv _ _ ({ td_name; _ } : A.td) =

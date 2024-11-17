@@ -34,3 +34,6 @@ val simple_var : access -> level -> exp
 val field_var : exp -> int -> exp
 val subscript_var : exp -> exp -> exp
 val print : exp -> unit
+val string_of_access : access -> string
+val mark_as_pointer : access -> level -> unit
+val string_of_level : level -> string

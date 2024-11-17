@@ -1,4 +1,6 @@
-let function f(i:int,j:int,k:int) = ()
-in
-    f(0,1,2)
+let
+    type t = { x : int }
+    var foo := t { x = 0 }
+    var bar : t := nil
+    in bar := foo
 end
